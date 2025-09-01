@@ -34,9 +34,44 @@ app.post("/admin/sql", async (req, res) => {
   }
 });
 
+app.get("/statusCliente", async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ erro: "Email é obrigatório" });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT u.nome, u.email, p.nome AS plano
+      FROM usuarios u
+      JOIN planos p ON u.plano_id = p.id
+      WHERE u.email = $1
+    `, [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    }
+
+    const cliente = result.rows[0];
+    const tipo = cliente.plano.toLowerCase() === "gratuito" ? "Grátis" : "Pago";
+
+    res.json({
+      nome: cliente.nome,
+      email: cliente.email,
+      plano: cliente.plano,
+      tipo
+    });
+  } catch (err) {
+    console.error("Erro ao consultar cliente:", err.message);
+    res.status(500).json({ erro: "Erro interno do servidor" });
+  }
+});
+
 // Inicia o servidor
 app.listen(PORT, () => {
   console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
+
 
 
