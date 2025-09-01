@@ -1,11 +1,13 @@
 // Importa o Express
 const express = require('express');
-
+const path = require('path');
 // Inicializa o app
 const app = express();
 
 // Middleware para interpretar JSON (caso você queira receber dados via POST futuramente)
 app.use(express.json());
+// Serve arquivos estáticos da pasta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Define a porta que o Render fornece ou usa 3000 localmente
 const PORT = process.env.PORT || 3000;
@@ -36,4 +38,5 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
+
 
