@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-api-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend para gerenciamento de comandos SQL e integração com banco PostgreSQL",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -10,14 +10,16 @@
     "type": "git",
     "url": "git+https://github.com/chensonbh763/whatsapp-api-backend.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["whatsapp", "api", "backend", "postgresql", "express"],
+  "author": "Felipe Chenson",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/chensonbh763/whatsapp-api-backend/issues"
   },
   "homepage": "https://github.com/chensonbh763/whatsapp-api-backend#readme",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.11.3",
+    "dotenv": "^16.4.5"
   }
 }
