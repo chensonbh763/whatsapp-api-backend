@@ -10,6 +10,9 @@ app.use(express.json());
 // Define a porta que o Render fornece ou usa 3000 localmente
 const PORT = process.env.PORT || 3000;
 
+const pool = require("./db"); // <-- Arquivo de conexão com o PostgreSQL
+
+
 // Rota de verificação
 app.get('/verificar', (req, res) => {
   res.json({
@@ -18,7 +21,19 @@ app.get('/verificar', (req, res) => {
   });
 });
 
+app.post("/admin/sql", async (req, res) => {
+  const { sql } = req.body;
+  try {
+    const { rows } = await pool.query(sql);
+    res.send(JSON.stringify(rows, null, 2));
+  } catch (err) {
+    console.error("Erro SQL:", err.message);
+    res.status(400).send("Erro SQL: " + err.message);
+  }
+});
+
 // Inicia o servidor
 app.listen(PORT, () => {
   console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
+
