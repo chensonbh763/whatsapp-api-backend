@@ -22,12 +22,17 @@ app.get("/verificar", (req, res) => {
   res.json({ status: "online", message: "Servidor Central rodando 🚀" });
 });
 
-// ✅ Rota para status do cliente (Grátis ou Premium)
+// ✅ Rota para liberar ou não cliente
 app.get("/statusCliente", async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ error: "Informe um e-mail" });
+  const { email, dispositivo_id } = req.query;
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  if (!email || !dispositivo_id) {
+    return res.status(400).json({ error: "Informe email e dispositivo_id" });
+  }
 
   try {
+    // 1. Verifica plano
     const result = await db.query(
       `SELECT u.email, p.nome AS plano
        FROM usuarios u
@@ -36,14 +41,38 @@ app.get("/statusCliente", async (req, res) => {
       [email]
     );
 
-    if (result.rows.length === 0) {
-      return res.json({ email, plano: "Gratuito" }); // se não achar, padrão grátis
+    const plano = result.rows[0]?.plano?.toLowerCase() || "gratuito";
+
+    // 2. Se não for premium, retorna não autorizado
+    if (plano !== "premium") {
+      return res.json({ status: "nao_autorizado", motivo: "Plano gratuito" });
     }
 
-    res.json(result.rows[0]);
+    // 3. Registra acesso
+    await db.query(
+      `INSERT INTO acessos (email, ip, dispositivo_id) VALUES ($1, $2, $3)`,
+      [email, ip, dispositivo_id]
+    );
+
+    // 4. Verifica limite de dispositivos
+    const limite = await db.query(
+      `SELECT COUNT(DISTINCT dispositivo_id) AS total
+       FROM acessos
+       WHERE email = $1`,
+      [email]
+    );
+
+    const total = limite.rows[0].total;
+    if (total > 3) {
+      return res.json({ status: "nao_autorizado", motivo: "Limite de dispositivos excedido" });
+    }
+
+    // ✅ Tudo certo
+    res.json({ status: "autorizado", plano, email });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro no servidor" });
+    console.error("Erro no servidor:", err);
+    res.status(500).json({ error: "Erro interno ao verificar acesso" });
   }
 });
 
@@ -84,6 +113,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
