@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Automação WhatsApp</title>
+  <script src="https://libtl.com/sdk.js" data-zone="9579151" data-sdk="show_9579151"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+  }
+
+  section {
+    margin-bottom: 30px;
+  }
+
+  h2 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .image-box {
+    width: 200px;
+    height: 200px;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    border: 2px dashed #ccc;
+    text-align: center;
+  }
+
+  textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    resize: none;
+  }
+
+  select {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+
+  button {
+    padding: 10px 20px;
+    margin-right: 10px;
+    background-color: #0078D4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #005a9e;
+  }
+
+  #statusConexao {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #555;
+  }
+
+  /* Novos estilos para Sessão 5 */
+  .enviar p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #444;
+  }
+
+  #ultimaMensagem {
+    font-style: italic;
+  }
+
+  #resumoEnvio {
+    font-weight: bold;
+    color: #0078D4;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Sessão 0: Cabeçalho -->
+    <section class="cabecalho">
+      <h2>Automação WhatsApp</h2>
+      <p>Este sistema permite enviar mensagens automáticas para grupos do seu WhatsApp com imagem, texto e temporizador. Clique em "Verificar" para checar a conexão com o servidor e o status do WhatsApp.</p>
+      <button id="verificar">Verificar</button>
+      <p id="statusConexao">Status: aguardando verificação...</p>
+    </section>
+
+    <!-- Sessão 1: Imagem -->
+    <section class="imagem">
+      <h2>Imagem</h2>
+      <div id="preview" class="image-box">Pré-visualização</div>
+      <input type="file" id="imageInput" accept="image/*">
+    </section>
+
+    <!-- Sessão 2: Texto -->
+    <section class="texto">
+      <h2>Mensagem</h2>
+      <textarea id="mensagem" placeholder="Digite sua mensagem aqui..."></textarea>
+    </section>
+
+    <!-- Sessão 3: Grupos -->
+<section class="grupos">
+  <h2>Grupos</h2>
+  <div class="grupo-selecao">
+    <label for="grupo1">Grupo 1:</label>
+    <select id="grupo1">
+      <option value="">Selecione</option>
+    </select>
+  </div>
+  <div class="grupo-selecao">
+    <label for="grupo2">Grupo 2:</label>
+    <select id="grupo2">
+      <option value="">Selecione</option>
+    </select>
+  </div>
+  <div class="grupo-selecao">
+    <label for="grupo3">Grupo 3:</label>
+    <select id="grupo3">
+      <option value="">Selecione</option>
+    </select>
+  </div>
+  <div class="grupo-selecao">
+    <label for="grupo4">Grupo 4:</label>
+    <select id="grupo4">
+      <option value="">Selecione</option>
+    </select>
+  </div>
+  <div class="grupo-selecao">
+    <label for="grupo5">Grupo 5:</label>
+    <select id="grupo5">
+      <option value="">Selecione</option>
+    </select>
+  </div>
+</section>
+    ...
+    <!-- Sessão Monetag -->
+    <section class="monetag">
+      <h2>Desbloquear envio</h2>
+      <p>Para enviar mensagens, é necessário assistir a um anúncio.</p>
+      <button id="assistirAnuncio">Assistir anúncio</button>
+      <p id="statusAnuncio" style="color: green; font-weight: bold;">Anúncio não assistido</p>
+    </section>
+
+
+<!-- Sessão 5: Enviar -->
+<section class="enviar">
+  <h2>Status</h2>
+  <p id="status">Aguardando mensagem...</p>
+  <p id="ultimaMensagem">Última mensagem enviada: --:--</p>
+  <p id="resumoEnvio">Mensagens enviadas: 0 de 5</p>
+  <button id="enviar" disabled>Enviar</button>
+</section>
+
+  </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // ✅ Verificar conexão com servidor
+    document.getElementById("verificar").addEventListener("click", async () => {
+      try {
+        const resposta = await fetch("http://localhost:3000/verificar");
+        const dados = await resposta.json();
+        document.getElementById("statusConexao").textContent = `Status: ${dados.status}`;
+      } catch (erro) {
+        document.getElementById("statusConexao").textContent = "Status: erro ao verificar conexão";
+        console.error("Erro na verificação:", erro);
+      }
+    });
+
+    // 🖼️ Pré-visualização da imagem
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          preview.innerHTML = `<img src="${reader.result}" style="max-width:100%; max-height:100%;">`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = "Pré-visualização";
+      }
+    });
+
+    // 📥 Carregar grupos dinamicamente
+    async function carregarGrupos() {
+      try {
+        const resposta = await fetch("http://localhost:3000/grupos");
+        const grupos = await resposta.json();
+
+        for (let i = 1; i <= 5; i++) {
+          const select = document.getElementById(`grupo${i}`);
+          select.innerHTML = '<option value="">Selecione</option>';
+
+          grupos.forEach(grupo => {
+            const option = document.createElement("option");
+            option.value = grupo.id;
+            option.textContent = grupo.name;
+            select.appendChild(option);
+          });
+        }
+      } catch (erro) {
+        console.error("Erro ao carregar grupos:", erro);
+      }
+    }
+
+    carregarGrupos(); // 🚀 Chamar ao carregar a página
+
+    // 🎥 Controle do anúncio Monetag
+    let anuncioAssistido = false;
+
+    document.getElementById("assistirAnuncio").addEventListener("click", () => {
+      show_9579151().then(() => {
+        anuncioAssistido = true;
+        document.getElementById("statusAnuncio").textContent = "✅ Anúncio assistido!";
+        document.getElementById("enviar").disabled = false;
+      });
+    });
+
+    // 📤 Envio da mensagem
+document.getElementById("enviar").addEventListener("click", async () => {
+  if (!anuncioAssistido) {
+    alert("Você precisa assistir ao anúncio antes de enviar.");
+    return;
+  }
+
+  const mensagem = document.getElementById("mensagem").value;
+  const grupos = [];
+  for (let i = 1; i <= 5; i++) {
+    const valor = document.getElementById(`grupo${i}`).value;
+    if (valor) grupos.push(valor);
+  }
+
+  const formData = new FormData();
+  formData.append("mensagem", mensagem);
+  formData.append("grupos", JSON.stringify(grupos));
+  formData.append("assistiuVideo", "true");
+
+  if (imageInput.files[0]) {
+    formData.append("imagem", imageInput.files[0]);
+  }
+
+  try {
+    const resposta = await fetch("http://localhost:3000/enviar", {
+      method: "POST",
+      body: formData
+    });
+
+    const resultado = await resposta.json();
+    document.getElementById("status").textContent = resultado.mensagem || "Mensagem enviada!";
+    document.getElementById("ultimaMensagem").textContent = `Última mensagem enviada: ${new Date().toLocaleTimeString()}`;
+    document.getElementById("resumoEnvio").textContent = `Mensagens enviadas: ${grupos.length} de 10`;
+
+    // 🔁 Resetar estado após envio
+    anuncioAssistido = false;
+    document.getElementById("statusAnuncio").textContent = "Anúncio não assistido";
+    document.getElementById("enviar").disabled = true;
+
+  } catch (erro) {
+    console.error("Erro ao enviar:", erro);
+    document.getElementById("status").textContent = "Erro ao enviar mensagem.";
+  }
+});
+</script>
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
