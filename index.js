@@ -56,8 +56,34 @@ app.get("/atualizacao", (req, res) => {
   });
 });
 
+// ✅ Rota para executar comandos SQL via painel admin
+app.post("/admin/sql", async (req, res) => {
+  const { sql } = req.body;
+
+  if (!sql || typeof sql !== "string") {
+    return res.status(400).send("❌ Comando SQL inválido.");
+  }
+
+  try {
+    const result = await db.query(sql);
+
+    // Se houver linhas retornadas, envia como JSON
+    if (result.rows && result.rows.length > 0) {
+      res.json(result.rows);
+    } else if (result.command === "INSERT" || result.command === "UPDATE" || result.command === "DELETE") {
+      res.send(`✅ Comando executado com sucesso: ${result.command}`);
+    } else {
+      res.send("✅ Comando executado, sem retorno.");
+    }
+  } catch (err) {
+    console.error("❌ Erro ao executar SQL:", err);
+    res.status(500).send("❌ Erro ao executar SQL: " + err.message);
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
