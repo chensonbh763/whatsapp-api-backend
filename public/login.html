@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Automazap</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #0078d7;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Entrar no Automazap</h2>
+    <input type="email" id="email" placeholder="Digite seu e-mail" required />
+    <button onclick="verificarEmail()">Entrar</button>
+  </div>
+
+  <script>
+    async function verificarEmail() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        alert("Por favor, insira um e-mail válido.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://whatsapp-api-backend-j7kn.onrender.com/statusCliente?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+
+        if (data.status === "premium") {
+          window.location.href = "https://whatsapp-api-backend-j7kn.onrender.com/automazap.html";
+        } else {
+          window.location.href = "https://whatsapp-api-backend-j7kn.onrender.com/freeautomazap.html";
+        }
+      } catch (error) {
+        console.error("Erro ao consultar status:", error);
+        alert("Erro ao verificar o status do cliente. Tente novamente.");
+      }
+    }
+  </script>
+</body>
+</html>
