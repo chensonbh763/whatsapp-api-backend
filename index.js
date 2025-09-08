@@ -2,11 +2,11 @@ import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
 import dotenv from "dotenv";
-
+import cors from "cors";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+app.use(cors());
 app.use(bodyParser.json());
 
 // 🔹 Conexão com o PostgreSQL (Render)
@@ -58,3 +58,4 @@ app.get("/atualizacao", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
