@@ -7,6 +7,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(cors());
+app.use(express.static("public"));
 app.use(bodyParser.json());
 
 // 🔹 Conexão com o PostgreSQL (Render)
@@ -58,4 +59,5 @@ app.get("/atualizacao", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
