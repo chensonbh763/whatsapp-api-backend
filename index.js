@@ -76,6 +76,27 @@ app.get("/statusCliente", async (req, res) => {
   }
 });
 
+
+app.post("/webhook", async (req, res) => {
+  const payload = req.body;
+
+  try {
+    // 1. Armazena o JSON completo
+    await db.query(
+      `INSERT INTO recebido (json_data) VALUES ($1)`,
+      [payload]
+    );
+
+    console.log("📦 Webhook recebido da Cakto:", payload);
+
+    res.status(200).send("✅ Webhook recebido com sucesso");
+  } catch (err) {
+    console.error("❌ Erro ao salvar webhook:", err);
+    res.status(500).send("Erro ao processar webhook");
+  }
+});
+
+
 // ✅ Rota de atualização
 app.get("/atualizacao", (req, res) => {
   res.json({
@@ -113,6 +134,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
