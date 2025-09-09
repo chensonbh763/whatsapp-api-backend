@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: sans-serif;
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
       padding: 20px;
       background: #f7f7f7;
@@ -26,7 +26,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
 
-    input, textarea, button {
+    input, textarea, button, select {
       display: block;
       width: 100%;
       padding: 10px;
@@ -52,28 +52,78 @@
       white-space: pre-wrap;
       margin-top: 10px;
     }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
   </style>
 </head>
 <body>
 
   <h2>🛠️ Painel Admin - LucreMaisTask</h2>
 
+  <!-- Testar conexão -->
   <section>
     <h3>✅ Testar conexão com o banco</h3>
     <button onclick="testarConexao()">Testar</button>
     <pre id="resultadoConexao">Aguardando...</pre>
   </section>
 
+  <!-- Consultar usuário -->
   <section>
-    <h3>➕ Criar nova tarefa</h3>
-    <input id="titulo" type="text" placeholder="Título da tarefa" />
-    <input id="link" type="text" placeholder="Link da tarefa (https://...)" />
-    <input id="dia" type="number" placeholder="Dia (ex: 20)" />
-    <input id="pontos" type="number" placeholder="Pontos" value="1" />
-    <button onclick="criarTarefa()">Criar</button>
-    <pre id="respostaCriar">Aguardando envio...</pre>
+    <h3>🔍 Consultar usuário por email</h3>
+    <input id="emailConsulta" type="email" placeholder="Digite o email do usuário" />
+    <button onclick="consultarUsuario()">Consultar</button>
+    <div id="resultadoConsulta">Nenhum resultado ainda.</div>
   </section>
 
+  <!-- Criar usuário -->
+  <section>
+    <h3>➕ Criar novo usuário</h3>
+    <input id="nomeUsuario" type="text" placeholder="Nome" />
+    <input id="emailUsuario" type="email" placeholder="Email" />
+    <input id="senhaUsuario" type="password" placeholder="Senha" />
+    <input id="celularUsuario" type="text" placeholder="Celular" />
+    <input id="cpfUsuario" type="text" placeholder="CPF" />
+    <select id="planoUsuario">
+      <option value="1">Plano Básico</option>
+      <option value="2">Plano VIP</option>
+    </select>
+    <button onclick="criarUsuario()">Criar usuário</button>
+    <pre id="respostaCriarUsuario">Aguardando...</pre>
+  </section>
+
+  <!-- Atualizar usuário -->
+  <section>
+    <h3>✏️ Atualizar plano do usuário</h3>
+    <input id="emailAtualizar" type="email" placeholder="Email do usuário" />
+    <select id="planoAtualizar">
+      <option value="1">Plano Básico</option>
+      <option value="2">Plano VIP</option>
+    </select>
+    <button onclick="atualizarPlano()">Atualizar</button>
+    <pre id="respostaAtualizar">Aguardando...</pre>
+  </section>
+
+  <!-- Remover usuário -->
+  <section>
+    <h3>❌ Remover usuário</h3>
+    <input id="emailRemover" type="email" placeholder="Email do usuário" />
+    <button onclick="removerUsuario()">Remover</button>
+    <pre id="respostaRemover">Aguardando...</pre>
+  </section>
+
+  <!-- Executar SQL -->
   <section>
     <h3>📄 Executar comando SQL</h3>
     <textarea id="sql" rows="4" placeholder="Escreva seu comando SQL aqui..."></textarea>
@@ -94,25 +144,107 @@
       }
     }
 
-    async function criarTarefa() {
-      const body = {
-        titulo: document.getElementById("titulo").value,
-        link: document.getElementById("link").value,
-        dia: parseInt(document.getElementById("dia").value),
-        pontos: parseInt(document.getElementById("pontos").value)
-      };
+
+
+    async function consultarUsuario() {
+      const email = document.getElementById("emailConsulta").value;
+      const sql = `
+        SELECT u.id, u.nome, u.email, p.nome AS plano, u.celular, u.cpf, u.criado_em
+        FROM usuarios u
+        JOIN planos p ON u.plano_id = p.id
+        WHERE u.email = '${email}';
+      `;
 
       try {
-        const res = await fetch("/admin/tarefa", {
+        const res = await fetch("/admin/sql", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
+          body: JSON.stringify({ sql })
         });
 
-        const text = await res.text();
-        document.getElementById("respostaCriar").textContent = text;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const keys = Object.keys(data[0]);
+          let tabela = "<table><tr>";
+          keys.forEach(k => tabela += `<th>${k}</th>`);
+          tabela += "</tr>";
+          data.forEach(row => {
+            tabela += "<tr>";
+            keys.forEach(k => tabela += `<td>${row[k]}</td>`);
+            tabela += "</tr>";
+          });
+          tabela += "</table>";
+          document.getElementById("resultadoConsulta").innerHTML = tabela;
+        } else {
+          document.getElementById("resultadoConsulta").innerHTML = "<pre>Nenhum usuário encontrado</pre>";
+        }
       } catch (err) {
-        document.getElementById("respostaCriar").textContent = "❌ Erro: " + err;
+        document.getElementById("resultadoConsulta").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
+      }
+    }
+
+    async function criarUsuario() {
+      const sql = `
+        INSERT INTO usuarios (nome, email, senha, celular, cpf, plano_id)
+        VALUES (
+          '${document.getElementById("nomeUsuario").value}',
+          '${document.getElementById("emailUsuario").value}',
+          '${document.getElementById("senhaUsuario").value}',
+          '${document.getElementById("celularUsuario").value}',
+          '${document.getElementById("cpfUsuario").value}',
+          ${document.getElementById("planoUsuario").value}
+        );
+      `;
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+        const text = await res.text();
+        document.getElementById("respostaCriarUsuario").textContent = text;
+      } catch (err) {
+        document.getElementById("respostaCriarUsuario").textContent = "❌ Erro: " + err;
+      }
+    }
+
+    async function atualizarPlano() {
+      const sql = `
+        UPDATE usuarios
+        SET plano_id = ${document.getElementById("planoAtualizar").value}
+        WHERE email = '${document.getElementById("emailAtualizar").value}';
+      `;
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+        const text = await res.text();
+        document.getElementById("respostaAtualizar").textContent = text;
+      } catch (err) {
+        document.getElementById("respostaAtualizar").textContent = "❌ Erro: " + err;
+      }
+    }
+
+    async function removerUsuario() {
+      const sql = `
+        DELETE FROM usuarios
+        WHERE email = '${document.getElementById("emailRemover").value}';
+      `;
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+        const text = await res.text();
+        document.getElementById("respostaRemover").textContent = text;
+      } catch (err) {
+        document.getElementById("respostaRemover").textContent = "❌ Erro: " + err;
       }
     }
 
@@ -137,10 +269,9 @@
 
         if (Array.isArray(result) && result.length > 0) {
           const keys = Object.keys(result[0]);
-          let tabela = "<table border='1' cellpadding='8'><tr>";
+          let tabela = "<table><tr>";
           keys.forEach(k => tabela += `<th>${k}</th>`);
           tabela += "</tr>";
-
           result.forEach(row => {
             tabela += "<tr>";
             keys.forEach(k => tabela += `<td>${row[k]}</td>`);
