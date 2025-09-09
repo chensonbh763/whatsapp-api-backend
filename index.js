@@ -22,7 +22,6 @@ app.get("/verificar", (req, res) => {
   res.json({ status: "online", message: "Servidor Central rodando 🚀" });
 });
 
-// ✅ Rota para liberar ou não cliente
 app.get("/statusCliente", async (req, res) => {
   const { email, dispositivo_id } = req.query;
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -48,13 +47,28 @@ app.get("/statusCliente", async (req, res) => {
       return res.json({ status: "nao_autorizado", motivo: "Plano gratuito" });
     }
 
-    // 3. Registra acesso
-    await db.query(
-      `INSERT INTO acessos (email, ip, dispositivo_id) VALUES ($1, $2, $3)`,
-      [email, ip, dispositivo_id]
+    // 3. Verifica se o dispositivo já está registrado
+    const jaRegistrado = await db.query(
+      `SELECT 1 FROM acessos WHERE email = $1 AND dispositivo_id = $2`,
+      [email, dispositivo_id]
     );
 
-    // 4. Verifica limite de dispositivos
+    if (jaRegistrado.rowCount === 0) {
+      // 4. Se não estiver, insere novo acesso
+      await db.query(
+        `INSERT INTO acessos (email, ip, dispositivo_id) VALUES ($1, $2, $3)`,
+        [email, ip, dispositivo_id]
+      );
+    } else {
+      // (Opcional) Atualiza data_login e IP se quiser manter o registro atualizado
+      await db.query(
+        `UPDATE acessos SET data_login = CURRENT_TIMESTAMP, ip = $1
+         WHERE email = $2 AND dispositivo_id = $3`,
+        [ip, email, dispositivo_id]
+      );
+    }
+
+    // 5. Verifica limite de dispositivos distintos
     const limite = await db.query(
       `SELECT COUNT(DISTINCT dispositivo_id) AS total
        FROM acessos
@@ -157,6 +171,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
