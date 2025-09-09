@@ -78,20 +78,43 @@ app.get("/statusCliente", async (req, res) => {
 
 
 app.post("/webhook", async (req, res) => {
-  const payload = req.body;
+  const { data, event } = req.body;
+
+  if (event !== "purchase_approved") {
+    return res.status(200).send("Evento ignorado");
+  }
 
   try {
     // 1. Armazena o JSON completo
     await db.query(
-      `INSERT INTO recebido (json_data) VALUES ($1)`,
-      [payload]
+      `INSERT INTO recebido (json_data) VALUES ($1::jsonb)`,
+      [JSON.stringify(req.body)]
     );
 
-    console.log("📦 Webhook recebido da Cakto:", payload);
+    // 2. Extrai dados do comprador
+    const comprador = data.customer || {};
+    const nome = comprador.name || "Cliente Automazap";
+    const email = comprador.email;
+    const celular = comprador.phone || null;
+    const cpf = comprador.docNumber || null;
 
-    res.status(200).send("✅ Webhook recebido com sucesso");
+    if (!email) {
+      return res.status(400).send("❌ E-mail do comprador ausente");
+    }
+
+    // 3. Cria usuário Premium
+    await db.query(
+      `INSERT INTO usuarios (nome, email, senha_hash, plano_id, criado_em, celular, cpf, ip)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, $6, NULL)
+       ON CONFLICT (email) DO NOTHING`,
+      [nome, email, 'hash_senha_premium', 2, celular, cpf]
+    );
+
+    console.log(`✅ Usuário criado: ${email}`);
+    res.status(200).send("✅ Webhook recebido e usuário criado");
+
   } catch (err) {
-    console.error("❌ Erro ao salvar webhook:", err);
+    console.error("❌ Erro ao processar webhook:", err);
     res.status(500).send("Erro ao processar webhook");
   }
 });
@@ -134,6 +157,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
