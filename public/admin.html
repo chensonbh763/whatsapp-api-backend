@@ -122,6 +122,79 @@
     <button onclick="removerUsuario()">Remover</button>
     <pre id="respostaRemover">Aguardando...</pre>
   </section>
+  <section>
+    <h3>🔐 Consultar Acessos</h3>
+    <input id="emailAcesso" type="text" placeholder="Digite o email para filtrar (opcional)" />
+    <button onclick="consultarAcessos()">Consultar</button>
+    <pre id="respostaAcessos">Nenhum resultado ainda.</pre>
+  </section>
+
+  <script>
+    async function consultarAcessos() {
+      const email = document.getElementById("emailAcesso").value;
+      let sql = "SELECT id, data_login, email, ip, dispositivo_id FROM acessos";
+      if (email) {
+        sql += " WHERE email = '" + email + "'";
+      }
+      sql += " ORDER BY data_login DESC LIMIT 50";
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+
+        const text = await res.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch {
+          document.getElementById("respostaAcessos").innerHTML = "<pre>" + text + "</pre>";
+          return;
+        }
+
+        if (Array.isArray(result) && result.length > 0) {
+          const keys = Object.keys(result[0]);
+          let tabela = "<table border='1' cellpadding='8'><tr>";
+          keys.forEach(k => tabela += `<th>${k}</th>`);
+          tabela += "<th>Ações</th></tr>";
+
+          result.forEach(row => {
+            tabela += "<tr>";
+            keys.forEach(k => tabela += `<td>${row[k]}</td>`);
+            tabela += `<td><button onclick="removerAcesso(${row.id})">Remover</button></td>`;
+            tabela += "</tr>";
+          });
+          tabela += "</table>";
+
+          document.getElementById("respostaAcessos").innerHTML = tabela;
+        } else {
+          document.getElementById("respostaAcessos").innerHTML = "<pre>Nenhum acesso encontrado</pre>";
+        }
+      } catch (err) {
+        document.getElementById("respostaAcessos").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
+      }
+    }
+
+    async function removerAcesso(id) {
+      if (!confirm("Tem certeza que deseja remover este acesso?")) return;
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql: "DELETE FROM acessos WHERE id = " + id })
+        });
+
+        const text = await res.text();
+        alert("Resultado: " + text);
+        consultarAcessos();
+      } catch (err) {
+        alert("❌ Erro: " + err);
+      }
+    }
+  </script>
 
   <!-- Executar SQL -->
   <section>
