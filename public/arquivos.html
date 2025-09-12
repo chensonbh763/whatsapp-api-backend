@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Arquivos Automazap</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .usuario {
+      background: #fff;
+      margin-bottom: 30px;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .usuario h2 {
+      margin-top: 0;
+      color: #0077cc;
+    }
+    .contato {
+      margin-left: 20px;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+    a {
+      text-decoration: none;
+      color: #333;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .preview {
+      max-width: 300px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📁 Arquivos Recebidos</h1>
+  <div id="conteudo"></div>
+
+  <script>
+    fetch("/listar-arquivos")
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("conteudo");
+
+        data.forEach(usuario => {
+          const divUsuario = document.createElement("div");
+          divUsuario.className = "usuario";
+
+          const titulo = document.createElement("h2");
+          titulo.textContent = usuario.usuario;
+          divUsuario.appendChild(titulo);
+
+          usuario.contatos.forEach(contato => {
+            const divContato = document.createElement("div");
+            divContato.className = "contato";
+
+            const subtitulo = document.createElement("h3");
+            subtitulo.textContent = contato.contato;
+            divContato.appendChild(subtitulo);
+
+            const lista = document.createElement("ul");
+
+            contato.arquivos.forEach(nome => {
+              const item = document.createElement("li");
+              const url = `/uploads/${usuario.usuario}/${contato.contato}/${nome}`;
+              const link = document.createElement("a");
+              link.href = url;
+              link.target = "_blank";
+              link.textContent = nome;
+              item.appendChild(link);
+
+              if (/\.(jpg|jpeg|png|gif)$/i.test(nome)) {
+                const img = document.createElement("img");
+                img.src = url;
+                img.className = "preview";
+                item.appendChild(img);
+              }
+
+              lista.appendChild(item);
+            });
+
+            divContato.appendChild(lista);
+            divUsuario.appendChild(divContato);
+          });
+
+          container.appendChild(divUsuario);
+        });
+      })
+      .catch(err => {
+        document.getElementById("conteudo").innerHTML = "<p>Erro ao carregar arquivos.</p>";
+        console.error("Erro ao buscar arquivos:", err);
+      });
+  </script>
+</body>
+</html>
