@@ -4,8 +4,14 @@ import pg from "pg";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
-const app = express();
 const PORT = process.env.PORT || 3000;
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const app = express();
+const upload = multer({ dest: "temp/" }); // pasta temporária
+
 app.use(cors());
 app.use(express.static("public"));
 app.use(bodyParser.json());
@@ -90,6 +96,29 @@ app.get("/statusCliente", async (req, res) => {
   }
 });
 
+
+app.post("/upload", upload.single("arquivo"), (req, res) => {
+  const { email, contato } = req.body;
+  const arquivo = req.file;
+
+  if (!email || !contato || !arquivo) {
+    return res.status(400).send("Parâmetros ausentes ou arquivo não enviado");
+  }
+
+  const destinoPasta = path.join("uploads", email, contato);
+  if (!fs.existsSync(destinoPasta)) {
+    fs.mkdirSync(destinoPasta, { recursive: true });
+  }
+
+  const destinoFinal = path.join(destinoPasta, arquivo.originalname);
+  fs.renameSync(arquivo.path, destinoFinal);
+
+  res.send("✅ Arquivo recebido e organizado");
+});
+
+app.listen(3000, () => {
+  console.log("🌐 Servidor externo rodando");
+});
 
 app.post("/webhook", async (req, res) => {
   const { data, event } = req.body;
@@ -190,6 +219,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
