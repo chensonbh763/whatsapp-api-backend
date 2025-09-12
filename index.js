@@ -94,39 +94,58 @@ app.get("/statusCliente", async (req, res) => {
 app.post("/webhook", async (req, res) => {
   const { data, event } = req.body;
 
-  if (event !== "purchase_approved") {
-    return res.status(200).send("Evento ignorado");
-  }
-
   try {
-    // 1. Armazena o JSON completo
+    // 1. Sempre armazena o JSON
     await db.query(
       `INSERT INTO recebido (json_data) VALUES ($1::jsonb)`,
       [JSON.stringify(req.body)]
     );
 
-    // 2. Extrai dados do comprador
-    const comprador = data.customer || {};
-    const nome = comprador.name || "Cliente Automazap";
-    const email = comprador.email;
-    const celular = comprador.phone || null;
-    const cpf = comprador.docNumber || null;
+    // 2. Trata evento de compra aprovada
+    if (event === "purchase_approved") {
+      const comprador = data.customer || {};
+      const nome = comprador.name || "Cliente Automazap";
+      const email = comprador.email;
+      const celular = comprador.phone || null;
+      const cpf = comprador.docNumber || null;
 
-    if (!email) {
-      return res.status(400).send("❌ E-mail do comprador ausente");
+      if (!email) {
+        return res.status(400).send("❌ E-mail do comprador ausente");
+      }
+
+      await db.query(
+        `INSERT INTO usuarios (nome, email, senha_hash, plano_id, criado_em, celular, cpf, ip)
+         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, $6, NULL)
+         ON CONFLICT (email) DO NOTHING`,
+        [nome, email, "hash_senha_premium", 2, celular, cpf]
+      );
+
+      console.log(`✅ Usuário criado: ${email}`);
+      return res.status(200).send("✅ Webhook recebido e usuário criado");
     }
 
-    // 3. Cria usuário Premium
-    await db.query(
-      `INSERT INTO usuarios (nome, email, senha_hash, plano_id, criado_em, celular, cpf, ip)
-       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, $6, NULL)
-       ON CONFLICT (email) DO NOTHING`,
-      [nome, email, 'hash_senha_premium', 2, celular, cpf]
-    );
+    // 3. Trata evento de reembolso
+    if (event === "refund" || event === "purchase_refunded") {
+      const email = data.customer?.email;
+      if (!email) {
+        return res.status(400).send("❌ E-mail do comprador ausente no reembolso");
+      }
 
-    console.log(`✅ Usuário criado: ${email}`);
-    res.status(200).send("✅ Webhook recebido e usuário criado");
+      // opção A: excluir usuário
+      // await db.query("DELETE FROM usuarios WHERE email = $1", [email]);
 
+      // opção B: apenas remover premium (mais seguro)
+      await db.query(
+        `UPDATE usuarios SET plano_id = 1 WHERE email = $1`,
+        [email]
+      );
+
+      console.log(`❌ Usuário reembolsado removido/downgrade: ${email}`);
+      return res.status(200).send("✅ Reembolso processado");
+    }
+
+    // 4. Outros eventos → só confirma
+    res.status(200).send("Evento ignorado");
   } catch (err) {
     console.error("❌ Erro ao processar webhook:", err);
     res.status(500).send("Erro ao processar webhook");
@@ -171,6 +190,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
