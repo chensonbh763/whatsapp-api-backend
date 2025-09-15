@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin - LucreMaisTask</title>
+  <title>Admin - Automazap</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -127,6 +127,26 @@
     <input id="emailAcesso" type="text" placeholder="Digite o email para filtrar (opcional)" />
     <button onclick="consultarAcessos()">Consultar</button>
     <pre id="respostaAcessos">Nenhum resultado ainda.</pre>
+  </section>
+
+
+  <!-- Gerenciar Versões -->
+  <section>
+    <h3>🆕 Gerenciar Versões</h3>
+
+    <!-- Consultar versão atual -->
+    <button onclick="consultarVersao()">Consultar versão atual</button>
+    <div id="resultadoVersao">Nenhum resultado ainda.</div>
+
+    <hr>
+
+    <!-- Adicionar nova versão -->
+    <h4>➕ Adicionar nova versão</h4>
+    <input id="novaVersao" type="text" placeholder="Ex: 1.0.2" />
+    <input id="linkDownload" type="text" placeholder="Link do Google Drive" />
+    <textarea id="changelog" rows="4" placeholder="O que mudou nesta versão?"></textarea>
+    <button onclick="adicionarVersao()">Salvar nova versão</button>
+    <pre id="respostaVersao">Aguardando...</pre>
   </section>
 
   <script>
@@ -360,6 +380,60 @@
         document.getElementById("respostaSQL").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
       }
     }
+
+    async function consultarVersao() {
+      const sql = "SELECT version, download_link, changelog, created_at FROM updates ORDER BY created_at DESC LIMIT 1";
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const v = data[0];
+          document.getElementById("resultadoVersao").innerHTML = `
+            <p><strong>Versão atual:</strong> ${v.version}</p>
+            <p><strong>Data:</strong> ${v.created_at}</p>
+            <p><strong>Alterações:</strong><br>${v.changelog || "Nenhum changelog informado"}</p>
+            <p><a href="${v.download_link}" target="_blank">🔗 Link para download</a></p>
+          `;
+        } else {
+          document.getElementById("resultadoVersao").innerHTML = "<pre>Nenhuma versão encontrada</pre>";
+        }
+      } catch (err) {
+        document.getElementById("resultadoVersao").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
+      }
+    }
+
+    async function adicionarVersao() {
+      const versao = document.getElementById("novaVersao").value;
+      const link = document.getElementById("linkDownload").value;
+      const changelog = document.getElementById("changelog").value;
+
+      const sql = `
+        INSERT INTO updates (version, download_link, changelog)
+        VALUES ('${versao}', '${link}', '${changelog}');
+      `;
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql })
+        });
+
+        const text = await res.text();
+        document.getElementById("respostaVersao").textContent = text;
+        consultarVersao(); // já atualiza após inserir
+      } catch (err) {
+        document.getElementById("respostaVersao").textContent = "❌ Erro: " + err;
+      }
+    }
+  
+
   </script>
 
 </body>
