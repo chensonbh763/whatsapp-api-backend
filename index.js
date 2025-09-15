@@ -185,13 +185,20 @@ app.post("/webhook", async (req, res) => {
 });
 
 
-// ✅ Rota de atualização
-app.get("/atualizacao", (req, res) => {
-  res.json({
-    versao: "1.0.0",
-    url: "https://meu-servidor.com/downloads/automazap-1.0.0.zip",
-    obrigatoria: false
-  });
+// ✅ rota para consultar última atualização
+app.get("/api/updates/latest", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM updates ORDER BY created_at DESC LIMIT 1"
+    );
+    if (result.rows.length === 0) {
+      return res.json({ success: false, message: "Nenhuma versão encontrada." });
+    }
+    res.json({ success: true, update: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Erro no servidor" });
+  }
 });
 
 // ✅ Rota para executar comandos SQL via painel admin
@@ -222,6 +229,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
