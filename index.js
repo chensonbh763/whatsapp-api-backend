@@ -187,19 +187,33 @@ app.post("/webhook", async (req, res) => {
 
 // ✅ rota para consultar última atualização
 app.get("/api/updates/latest", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT * FROM updates ORDER BY created_at DESC LIMIT 1"
-    );
-    if (result.rows.length === 0) {
-      return res.json({ success: false, message: "Nenhuma versão encontrada." });
+      const sqli = "SELECT version, download_link, changelog, created_at FROM updates ORDER BY created_at DESC LIMIT 1";
+
+      try {
+        const res = await fetch("/admin/sql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sqli })
+        });
+
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const v = data[0];
+          document.getElementById("resultadoVersao").innerHTML = `
+            <p><strong>Versão atual:</strong> ${v.version}</p>
+            <p><strong>Data:</strong> ${v.created_at}</p>
+            <p><strong>Alterações:</strong><br>${v.changelog || "Nenhum changelog informado"}</p>
+            <p><a href="${v.download_link}" target="_blank">🔗 Link para download</a></p>
+          `;
+        } else {
+          document.getElementById("resultadoVersao").innerHTML = "<pre>Nenhuma versão encontrada</pre>";
+        }
+      } catch (err) {
+        document.getElementById("resultadoVersao").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
+      }
     }
-    res.json({ success: true, update: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Erro no servidor" });
-  }
-});
+
+
 
 // ✅ Rota para executar comandos SQL via painel admin
 app.post("/admin/sql", async (req, res) => {
@@ -229,6 +243,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
