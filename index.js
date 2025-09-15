@@ -27,7 +27,10 @@ db.connect();
 app.get("/verificar", (req, res) => {
   res.json({ status: "online", message: "Servidor Central rodando 🚀" });
 });
-
+// ✅ Rota de ping (root)
+app.get('/', (req, res) => {
+  res.send('🟢 Servidor ativo');
+});
 app.get("/statusCliente", async (req, res) => {
   const { email, dispositivo_id } = req.query;
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -219,6 +222,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
