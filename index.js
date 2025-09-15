@@ -211,7 +211,7 @@ app.get("/api/updates/latest", async (req, res) => {
       } catch (err) {
         document.getElementById("resultadoVersao").innerHTML = "<pre>❌ Erro: " + err + "</pre>";
       }
-    }
+    });
 
 
 
@@ -243,6 +243,7 @@ app.post("/admin/sql", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
