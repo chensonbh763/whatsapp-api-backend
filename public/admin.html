@@ -276,31 +276,36 @@
       }
     }
 
-    async function criarUsuario() {
-      const sql = `
-        INSERT INTO usuarios (nome, email, senha, celular, cpf, plano_id)
-        VALUES (
-          '${document.getElementById("nomeUsuario").value}',
-          '${document.getElementById("emailUsuario").value}',
-          '${document.getElementById("senhaUsuario").value}',
-          '${document.getElementById("celularUsuario").value}',
-          '${document.getElementById("cpfUsuario").value}',
-          ${document.getElementById("planoUsuario").value}
-        );
-      `;
+  
+  async function criarUsuario() {
+    const sql = `
+      INSERT INTO usuarios (nome, email, senha_hash, celular, cpf, plano_id, criado_em)
+      VALUES (
+        '${document.getElementById("nomeUsuario").value}',
+        '${document.getElementById("emailUsuario").value}',
+        '${document.getElementById("senhaUsuario").value}', 
+        '${document.getElementById("celularUsuario").value}',
+        '${document.getElementById("cpfUsuario").value}',
+        ${document.getElementById("planoUsuario").value},
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT (email) DO NOTHING;
+    `;
 
-      try {
-        const res = await fetch("/admin/sql", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sql })
-        });
-        const text = await res.text();
-        document.getElementById("respostaCriarUsuario").textContent = text;
-      } catch (err) {
-        document.getElementById("respostaCriarUsuario").textContent = "❌ Erro: " + err;
-      }
+    try {
+      const res = await fetch("/admin/sql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sql })
+      });
+      const text = await res.text();
+      document.getElementById("respostaCriarUsuario").textContent = text;
+    } catch (err) {
+      document.getElementById("respostaCriarUsuario").textContent = "❌ Erro: " + err;
     }
+  }
+
+
 
     async function atualizarPlano() {
       const sql = `
