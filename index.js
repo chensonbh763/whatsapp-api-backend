@@ -240,9 +240,35 @@ app.post("/admin/sql", async (req, res) => {
   }
 });
 
+app.get("/emailDisponivel", async (req, res) => {
+  try {
+    for (let i = 1; i <= 10; i++) {
+      const email = `trial${i === 1 ? "" : i}@email.com`;
+
+      const result = await db.query(
+        `SELECT COUNT(DISTINCT dispositivo_id) AS total FROM acessos WHERE email = $1`,
+        [email]
+      );
+
+      const total = result.rows[0]?.total || 0;
+
+      if (total < 3) {
+        return res.json({ email });
+      }
+    }
+
+    return res.status(403).json({ error: "Todos os e-mails de teste estão ocupados" });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao buscar e-mail disponível" });
+  }
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Servidor Central rodando na porta ${PORT}`);
 });
+
 
 
 
